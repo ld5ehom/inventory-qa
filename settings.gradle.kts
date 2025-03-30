@@ -8,4 +8,5 @@ plugins {
 // tests
 include(
     "tests:simple",
+    "tests:inventory"
 )
