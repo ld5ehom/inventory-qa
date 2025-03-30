@@ -1,0 +1,16 @@
+- **Details** :
+    - **Project Structure Setup for Service Unit Testing**
+        - Created the tests/inventory module and added build.gradle.kts to configure a dedicated testing environment along with a separated main and test directory structure
+        - Structured the root package inventoryapp with sub-packages: inventory, common, and config to organize domain logic, shared utilities, and configuration files by purpose
+        - Created the InventoryServiceTest class under inventory/test/inventory/service to provide the foundation for writing unit tests for InventoryService
+        - Used @Nested classes within InventoryServiceTest to group tests by feature, and organized each group with separate success and failure test cases
+        - Implemented the FindByItemId test group to verify item lookup behavior by ID, ensuring that it returns null when not found and returns an Inventory object when found
+        - Implemented the DecreaseByItemId test group to validate various failure scenarios such as negative quantity, stock overflow, missing target entity, and update failures, as well as successful stock deduction
+    - **Service 단위 테스트를 위한 프로젝트 구조 세팅**
+        - tests/inventory 모듈을 생성하고 build.gradle.kts를 추가하여, 테스트 전용 환경과 main, test 디렉토리 구조를 함께 구성함
+        - inventoryapp 루트 패키지 아래에 inventory, common, config 패키지를 생성하여, 도메인 로직과 공통 유틸, 설정 파일을 목적에 따라 분리함
+        - inventory/test/inventory/service 경로에 InventoryServiceTest 클래스를 생성하여, InventoryService의 단위 테스트 작성을 위한 기본 뼈대를 마련함
+        - InventoryServiceTest 클래스를 생성하고, @Nested 클래스를 활용해 기능별로 테스트를 그룹화하며 실패 및 성공 케이스를 구분한 기본 테스트 구조를 설정함
+        - FindByItemId 테스트 그룹을 작성하여, 상품 ID 기반 조회 시 실패 시 null 반환, 성공 시 Inventory 반환 여부를 검증할 수 있도록 테스트 뼈대를 구성함
+        - DecreaseByItemId 테스트 그룹을 작성하여, 음수 입력, 재고 초과, 대상 미존재 등 예외 케이스와 정상 차감 처리까지 검증할 수 있도록 테스트 구조를 구성함
+        - UpdateStock 테스트 그룹을 작성하여, 유효하지 않은 입력과 대상 미존재에 대한 예외 처리 및 정상 재고 수정 여부를 검증할 수 있도록 테스트 뼈대를 구성함
