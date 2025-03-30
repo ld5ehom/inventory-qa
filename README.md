@@ -18,6 +18,13 @@
 ### Task 1: Service Layer Implementation with Unit Tests
 - **Issues** : [task-1-service](https://github.com/ld5ehom/inventory-qa/tree/task-1-service)
 - **Details** :
+  - **Project Structure Setup for Service Unit Testing**
+    - Created the tests/inventory module and added build.gradle.kts to configure a dedicated testing environment along with a separated main and test directory structure 
+    - Structured the root package inventoryapp with sub-packages: inventory, common, and config to organize domain logic, shared utilities, and configuration files by purpose 
+    - Created the InventoryServiceTest class under inventory/test/inventory/service to provide the foundation for writing unit tests for InventoryService 
+    - Used @Nested classes within InventoryServiceTest to group tests by feature, and organized each group with separate success and failure test cases 
+    - Implemented the FindByItemId test group to verify item lookup behavior by ID, ensuring that it returns null when not found and returns an Inventory object when found 
+    - Implemented the DecreaseByItemId test group to validate various failure scenarios such as negative quantity, stock overflow, missing target entity, and update failures, as well as successful stock deduction 
 
 ### Task 2: Controller Layer Testing using WebMvcTest
 
