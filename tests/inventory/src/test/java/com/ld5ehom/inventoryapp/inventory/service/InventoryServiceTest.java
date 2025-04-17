@@ -2,35 +2,37 @@ package com.ld5ehom.inventoryapp.inventory.service;
 
 import com.ld5ehom.inventoryapp.inventory.repository.InventoryJpaRepositoryStub;
 import com.ld5ehom.inventoryapp.inventory.service.domain.Inventory;
+import com.ld5ehom.inventoryapp.inventory.service.exception.InsufficientStockException;
+import com.ld5ehom.inventoryapp.inventory.service.exception.InvalidDecreaseQuantityException;
+import com.ld5ehom.inventoryapp.inventory.service.exception.InvalidStockException;
+import com.ld5ehom.inventoryapp.inventory.service.exception.ItemNotFoundException;
 import com.ld5ehom.inventoryapp.test.exception.NotImplementedTestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 
-
-// Nested는 별도의 테스트 환경을 만들어 준다. 독립된 공간을 만들어서 테스트함
+@ExtendWith(MockitoExtension.class)
 public class InventoryServiceTest {
+
+    @InjectMocks
     InventoryService sut; // system under test
 
+    @Spy
     InventoryJpaRepositoryStub inventoryJpaRepository;
-
-    // BeforeEach 는 모든 테스트에 영향을 준다.
-    // Nested 안에 있으면 해당 Nested에만 영향을 준다.
-    @BeforeEach
-    void setUpAll() {
-        inventoryJpaRepository = new InventoryJpaRepositoryStub();
-        sut = new InventoryService(inventoryJpaRepository);
-    }
 
     // 상품의 현재 재고 확인 테스트 케이스 구현
     // 나열 조건은 코드상 위에서 부터 먼저 실패를 확인하는 케이스부터 작성함
     @Nested
-    class FindByItemId { // 상품 item ID 로 조회하는 클래스
+    class FindByItemId {
 
         // Declared common itemId and stock values for reuse in tests
         // 테스트 전용 itemId 및 stock 값을 필드로 상단에 선언하여 재사용
@@ -48,6 +50,8 @@ public class InventoryServiceTest {
         @Test
         void test1() {
             final String nonExistingItemId = "2";
+            // Attempts to find nonexistent itemId
+            // 존재하지 않는 itemId 조회 시도
             final Inventory result = sut.findByItemId(nonExistingItemId);
             assertNull(result);
         }
@@ -55,11 +59,9 @@ public class InventoryServiceTest {
         @DisplayName("Returns inventory if the entity with the given itemId is found")
         @Test
         void test1000() {
-
-            // Reused shared itemId and stock defined at the class level instead of redefining
-            // 기존에 재정의하던 itemId, stock 값을 상단 필드 값으로 대체함
             final Inventory result = sut.findByItemId(existingItemId);
-
+            // Checks that found inventory matches expected values
+            // 조회된 inventory의 값이 기대값과 일치하는지 확인
             assertNotNull(result);
             assertEquals(existingItemId, result.getItemId());
             assertEquals(stock, result.getStock());
@@ -69,67 +71,126 @@ public class InventoryServiceTest {
     // 재고 차감 test
     @Nested
     class DecreaseByItemId {
-        // quantity가 음수라면, Exception을 throw한다.
+        final String existingItemId = "1";
+        final Long stock = 10L;
+
+        @BeforeEach
+        void setUp() {
+            inventoryJpaRepository.addInventoryEntity(existingItemId, stock);
+        }
+
         @DisplayName("Throws an exception if the quantity is negative")
         @Test
         void test1() {
-            throw new NotImplementedTestException();
+            final Long quantity = -1L;
+            // Throws exception if quantity is negative
+            // 수량이 음수일 경우 예외 발생
+            assertThrows(InvalidDecreaseQuantityException.class, () -> {
+                sut.decreaseByItemId(existingItemId, quantity);
+            });
         }
 
-        // itemId를 갖는 entity를 찾지 못하면, Exception을 throw한다
         @DisplayName("Throws an exception if the entity with the given itemId is not found")
         @Test
         void test2() {
-            throw new NotImplementedTestException();
+            final String nonExistingItemId = "2";
+            final Long quantity = 10L;
+            // Throws exception if itemId does not exist
+            // itemId가 존재하지 않을 경우 예외 발생
+            assertThrows(ItemNotFoundException.class, () -> {
+                sut.decreaseByItemId(nonExistingItemId, quantity);
+            });
         }
 
-        // quantity가 stock 보다 크면, Exception을 throw한다.
         @DisplayName("Throws an exception if the quantity exceeds the current stock")
         @Test
         void test3() {
-            throw new NotImplementedTestException();
+            final Long quantity = stock + 1;
+            // Throws exception if quantity exceeds available stock
+            // 요청 수량이 재고보다 많을 경우 예외 발생
+            assertThrows(InsufficientStockException.class, () -> {
+                sut.decreaseByItemId(existingItemId, quantity);
+            });
         }
 
-        // 변경된 entity가 없다면, Exception을 throw한다.
         @DisplayName("Throws an exception if no entity was updated")
         @Test
         void test4() {
-            throw new NotImplementedTestException();
+            final Long quantity = 10L;
+
+            // Forces decreaseStock to return 0 using stubbing
+            // decreaseStock이 0을 반환하도록 강제로 설정
+            doReturn(0).when(inventoryJpaRepository).decreaseStock(existingItemId, quantity);
+
+            // Throws exception because update count is 0
+            // 업데이트된 엔티티가 없으므로 예외 발생
+            assertThrows(ItemNotFoundException.class, () -> {
+                sut.decreaseByItemId(existingItemId, quantity);
+            });
+
+            // Verifies that decreaseStock was called with correct arguments
+            // decreaseStock이 올바르게 호출되었는지 확인
+            verify(inventoryJpaRepository).decreaseStock(existingItemId, quantity);
         }
 
-        // 성공 케이스
-        // itemId를 갖는 entity를 찾으면, stock을 빼고 inventory를 반환한다.
         @DisplayName("Returns inventory after subtracting stock if the entity with the given itemId is found")
         @Test
         void test1000() {
-            throw new NotImplementedTestException();
+            final Long quantity = 10L;
+            final Inventory result = sut.decreaseByItemId(existingItemId, quantity);
+            // Validates updated inventory after stock decrease
+            // 재고 차감 후 업데이트된 inventory 검증
+            assertNotNull(result);
+            assertEquals(existingItemId, result.getItemId());
+            assertEquals(stock - quantity, result.getStock());
         }
-
     }
 
     // 재고 수정
     @Nested
     class UpdateStock {
-        // 수정할 stock이 유효하지 않는다면, Exception을 throw한다.
+        final String existingItemId = "1";
+        final Long stock = 10L;
+
+        @BeforeEach
+        void setUp() {
+            inventoryJpaRepository.addInventoryEntity(existingItemId, stock);
+        }
+
         @DisplayName("Throws an exception if the new stock value is invalid")
         @Test
         void test1() {
-            throw new NotImplementedTestException();
+            final Long stock = -1L;
+            // Throws exception if new stock is negative
+            // 새로운 재고가 음수일 경우 예외 발생
+            assertThrows(InvalidStockException.class, () -> {
+                sut.updateStock(existingItemId, stock);
+            });
         }
 
-        // itemId를 갖는 entity를 찾지 못하면, Exception을 throw한다.
         @DisplayName("Throws an exception if the entity with the given itemId is not found")
         @Test
         void test2() {
-            throw new NotImplementedTestException();
+            final String nonExistingItemId = "2";
+            final Long stock = 10L;
+            // Throws exception if itemId does not exist
+            // 존재하지 않는 itemId일 경우 예외 발생
+            assertThrows(ItemNotFoundException.class, () -> {
+                sut.updateStock(nonExistingItemId, stock);
+            });
         }
 
-        // 성공 케이스
-        // itemId를 갖는 entity를 찾으면, stock을 수정하고 inventory를 반환한다.
         @DisplayName("Returns inventory after updating stock if the entity with the given itemId is found")
         @Test
         void test1000() {
-            throw new NotImplementedTestException();
+            final Long newStock = 20L;
+            final Inventory result = sut.updateStock(existingItemId, newStock);
+            // Checks that inventory was updated with new stock value
+            // 새로운 재고 값으로 inventory가 업데이트되었는지 확인
+            assertNotNull(result);
+            assertEquals(existingItemId, result.getItemId());
+            assertEquals(newStock, result.getStock());
         }
     }
 }
+
