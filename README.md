@@ -1,10 +1,7 @@
 # Inventory System Test-Driven Development
 
 ##  Project Overview
-- Backend: Java, Spring Boot, Spring Data JPA, Spring Data Redis, Spring Cloud Stream
-- Testing: JUnit 5, Mockito, Spring Boot Test, WebMvcTest, DataJpaTest, Test Binder
-- Performance & Quality: JMeter, k6, Jacoco, SonarQube
-- CI/CD & Tools: GitHub Actions
+- Utilized: Java, Spring Boot, JUnit 5, Mockito, WebMvcTest, DataJpaTest, SpringBootTest, Test Binder, DataRedisTest, Redis, JMeter, k6, Jacoco, SonarQube, GitHub Actions, Docker
 
 -----
 ## ## Reference Site
@@ -25,7 +22,7 @@
     - Used @Nested classes within InventoryServiceTest to group tests by feature, and organized each group with separate success and failure test cases 
     - Implemented the FindByItemId test group to verify item lookup behavior by ID, ensuring that it returns null when not found and returns an Inventory object when found 
     - Implemented the DecreaseByItemId test group to validate various failure scenarios such as negative quantity, stock overflow, missing target entity, and update failures, as well as successful stock deduction 
-  - **Update FindByItemId test to include actual logic and assertions** :
+  - **Update FindByItemId test to include actual logic and assertions** : [0c205d8](https://github.com/ld5ehom/inventory-qa/commit/0c205d8edc8f03a98ecb746ed602cbb367b7677f)
     - Created the InventoryJpaRepositoryStub class to simulate an in-memory repository, enabling unit tests for InventoryService without external dependencies 
     - Implemented the addInventoryEntity() method to preload test data before each test execution 
     - Injected the stub repository into InventoryService to construct a fully isolated test environment 
@@ -33,12 +30,30 @@
     - Replaced placeholder test methods that only threw exceptions with actual logic that calls sut.findByItemId() and verifies results using assertNull, assertNotNull, and assertEquals 
     - Covered both failure (returns null when the item does not exist) and success (returns Inventory when the item exists) scenarios 
     - Improved test clarity and stability by ensuring the test logic reflects actual service behavior
-  - **Define core inventory components to support testability** :
+  - **Define core inventory components to support testability** : [0c205d8](https://github.com/ld5ehom/inventory-qa/commit/0c205d8edc8f03a98ecb746ed602cbb367b7677f)
     - Defined core classes such as InventoryEntity, Inventory, and InventoryService to encapsulate essential domain logic and support unit testing 
     - Declared the InventoryJpaRepository interface with findByItemId, decreaseStock, and save methods to separate data access responsibilities 
     - Created the InventoryJpaRepositoryStub class as an in-memory implementation to support testing without relying on a real database 
     - Structured InventoryServiceTest with clearly defined sut, organized test groups using @Nested, and consistent input and verification for each test scenario 
     - Designed the service layer, repository layer, and domain models with clear separation and interconnection to ensure the overall inventory structure is testable and maintainable
+  - **Update DecreaseByItemId, updateStock test**
+    - Implemented test cases for DecreaseByItemId
+      - Covers scenarios for negative quantity, non-existent itemId, quantity exceeding stock, update failure, and successful stock decrease
+    - Implemented test cases for UpdateStock
+      - Covers scenarios for negative stock value, non-existent itemId, and successful update
+    - Implemented methods in InventoryService
+      - decreaseByItemId: Handles stock decrease and related exception logic
+      - updateStock: Allows manual stock modification
+    - Enhanced InventoryJpaRepositoryStub
+      - decreaseStock: Finds entity by itemId, decreases stock, and returns 1 on success
+      - save: Updates existing entity by ID or adds a new one if not found
+    - Refactored test class structure
+      - Applied @ExtendWith(MockitoExtension.class)
+      - Removed manual @BeforeEach(setUpAll) and migrated to mock-based dependency injection
+
+
+
+
 
 ### Task 2: Controller Layer Testing using WebMvcTest
 
